@@ -11,6 +11,16 @@ demonstration experiments proving that a hash check and a real
 cryptographic signature check are not the same guarantee as authenticity
 anchored to hardware.
 
+![Boot-time trust chain: the ROM layer either performs no check (stock QEMU) or verifies SPL against an OTP-fused RSA key (this repo's vboot ROM); either way, the same SPL→U-Boot→kernel FIT-signature chain runs downstream, using a software build key rather than a hardware anchor.](docs/architecture.svg)
+
+A real signature check two layers downstream is only as trustworthy as
+whatever verifies the layer beneath it. Layers 2–3 (FIT signing) are
+identical on both machines above — only layer 1's hardware anchor
+decides whether that check ever gets exercised honestly. That's exactly
+what experiments D1 and D2 demonstrate: the identical attacker-swapped
+artifact boots unchallenged on the left, gets rejected before SPL ever
+runs on the right.
+
 ## Layout
 
     scripts/                         build-image.sh, run-qemu.sh, diff-boot.sh,
