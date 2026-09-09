@@ -8,8 +8,7 @@
  * this lab generated with the actual `otptool` from this same repo's
  * u-boot-aspeed-sdk build (`otptool print <image>` decodes them with
  * the same names used here), for
- * evb-ast2600-secureboot-otp-on.json's config -- see
- * notes/2026-09-03-03-vbootrom-ast2600-stage2.md.
+ * evb-ast2600-secureboot-otp-on.json's config.
  *
  * Key-list-header layout (data-region dwords 0x0-0xF, one entry per key,
  * scanned until the "last entry" bit) and the type-code values below are
@@ -19,8 +18,8 @@
  * "big" (evb-ast2600-secureboot-otp-on.json), which uses different type
  * *values* than revision A0 at the same bit position (bits 17:14). This
  * ROM only ever targets this lab's real chip config, not a generic
- * multi-revision decoder -- see notes/2026-09-0?-vbootrom-ast2600-*.md
- * (stage-3 slice 3.1 entry) for the cross-check against `otptool print`.
+ * multi-revision decoder -- cross-check any change here against
+ * `otptool print`'s own decode of a real OTP image.
  */
 #ifndef OTP_H
 #define OTP_H
@@ -78,8 +77,8 @@ void otp_read_secure_boot_config(struct otp_secure_boot_config *cfg);
  * config, not a fixed layout (see otp_find_key()'s own comment).
  * rsa_len_words is the modulus length in 32-bit words (128 for
  * RSA4096). mod_out must have room for rsa_len_words words; exp_out for
- * 1 word (this key's exponent, 0x10001, fits in one dword -- see the
- * real otptool print output in the notes entry). If no RSA_OEM key is
+ * 1 word (this key's exponent, 0x10001, fits in one dword -- confirmed
+ * against real `otptool print` output). If no RSA_OEM key is
  * found in the key list, mod_out is zeroed (fails closed -- a
  * zero-modulus RSA verify can never succeed) and exp_out set to 0. */
 void otp_read_rsa_pub_key(unsigned int *mod_out, unsigned int rsa_len_words,

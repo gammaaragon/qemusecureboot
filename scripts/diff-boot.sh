@@ -5,8 +5,8 @@
 # per-boot-random IDs), and diffs the result.
 #
 # The diff is taken on SORTED normalized output, not raw sequential order.
-# Verified empirically (two separate boots of the *same* base image, see
-# notes/) that Linux's async device probing and systemd's parallel unit
+# Verified empirically (two separate boots of the *same* base image) that
+# Linux's async device probing and systemd's parallel unit
 # startup reorder ~190 lines of boot output between any two boots,
 # identical image or not — a sequential diff is mostly measuring that
 # jitter, not anything meta-ast2600-lab did. Sorting cancels reordering and

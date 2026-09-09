@@ -5,8 +5,8 @@
  * UART5, then halts. No flash copying, no jump to SPL -- purely to
  * verify otp.c's register-level reads produce the correct values
  * against a real, tool-generated OTP image, before wiring this into
- * the actual boot flow. See notes/2026-09-03-03-vbootrom-ast2600-stage2.md
- * for the expected values this output should be checked against.
+ * the actual boot flow -- cross-check its output against `otptool
+ * print`'s own decode of the same image.
  */
 #include "otp.h"
 #include "uart.h"

@@ -7,7 +7,7 @@
  * so this boot ROM has to compute them itself, at every verify. New
  * code, not extracted from U-Boot -- every output cross-checked against
  * an independent Python computation for this lab's real key before
- * being trusted. See notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md.
+ * being trusted (see bignum_test.c).
  */
 #ifndef BIGNUM_H
 #define BIGNUM_H

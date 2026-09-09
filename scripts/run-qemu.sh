@@ -82,13 +82,10 @@ if [ "$VARIANT" = "secureboot" ]; then
   # The system qemu-system-arm (8.2.2) has real bugs in its aspeed_hace
   # device model that make layer 3 (kernel-FIT signature verification)
   # either crash QEMU or silently compute the wrong hash -- see
-  # scripts/build-patched-qemu.sh and
-  # notes/2026-09-01-01-secure-boot-fit-and-otp-signing.md. Those bugs are
-  # gone as of upstream QEMU 11.1.0 (see
-  # notes/2026-09-03-01-qemu-11.1.0-hace-bugs-gone.md), so
-  # build-patched-qemu.sh now builds plain upstream 11.1.0 instead of
-  # patching 8.2.2. Use that local build if it's there; tell the user how
-  # to get it if not.
+  # scripts/build-patched-qemu.sh. Those bugs are gone as of upstream
+  # QEMU 11.1.0, so build-patched-qemu.sh now builds plain upstream
+  # 11.1.x instead of patching 8.2.2. Use that local build if it's
+  # there; tell the user how to get it if not.
   PATCHED_QEMU="$WORK_DIR/qemu-aspeed-hace-fix/qemu-11.1.1/build/qemu-system-arm"
   if [ -x "$PATCHED_QEMU" ]; then
     QEMU_BIN="$PATCHED_QEMU"

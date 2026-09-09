@@ -5,13 +5,12 @@
  * a fixed offset (0x20 for AST2600/2605 -- socsec.py's own default,
  * never overridden by this lab's recipe; the OTP config's "Secure boot
  * header offset" field is a *different*, unrelated value that turns out
- * not to be consulted for this at all -- see the notes entry).
+ * not to be consulted for this at all).
  *
  * Field order, meaning, and the header's exact placement all confirmed
  * empirically against this lab's real deployed signed SPL binary, not
  * just read from socsec.py's signing code -- both agree exactly,
- * including a self-consistent checksum. See
- * notes/2026-09-03-04-vbootrom-ast2600-header-parsing.md.
+ * including a self-consistent checksum.
  */
 #ifndef HEADER_H
 #define HEADER_H

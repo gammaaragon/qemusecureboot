@@ -2,9 +2,8 @@
 /*
  * Diagnostic-only build: computes n0inv and RR mod N for the real OTP
  * key and prints them over UART, to cross-check against an independent
- * Python computation before trusting bignum.c in the real verify
- * pipeline. See notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md for
- * the expected values.
+ * Python computation (e.g. `pow`/modular-inverse in a REPL) before
+ * trusting bignum.c in the real verify pipeline.
  */
 #include "bignum.h"
 #include "otp.h"

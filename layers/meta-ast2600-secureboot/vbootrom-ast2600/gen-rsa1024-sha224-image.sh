@@ -3,9 +3,8 @@
 # Self-signs an RSA1024/SHA224 test image + matching OTP image, closing
 # the one real remaining gap in this ROM's tested algorithm coverage:
 # socsec's own test suite has real A3+big reference vectors for every
-# rsa-size/sha-mode combination EXCEPT rsa1024/sha224 (see
-# notes/2026-09-03-07-vbootrom-ast2600-stage3-slice1-otp-keylist.md) --
-# both are implemented (otp.c's rsa_len/sha_mode dispatch already
+# rsa-size/sha-mode combination EXCEPT rsa1024/sha224 -- both are
+# implemented (otp.c's rsa_len/sha_mode dispatch already
 # covers them) but were never checked against real ground truth. Same
 # self-signing approach as gen-cot-image.sh (real socsec/otptool CLI,
 # via the same throwaway venv), just a fresh OTP config instead of

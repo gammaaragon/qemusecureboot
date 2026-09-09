@@ -19,7 +19,7 @@
 #define OTP_DATA_DWORD_COUNT 0x800u /* data region: [0, 0x800); config: [0x800, 0x1000) */
 
 /* config DW0 bit positions, confirmed against a real otptool-generated
- * OTP image via `otptool print` -- see the notes entry. */
+ * OTP image via `otptool print`. */
 #define CFG_DW0_SECURE_BOOT_EN (1u << 1)
 #define CFG_DW0_IGNORE_STRAP (1u << 6)
 #define CFG_DW0_MODE2 (1u << 7)

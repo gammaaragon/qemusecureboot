@@ -3,11 +3,9 @@
 # Signs a COT-suffixed BL1 test image with this lab's own real signing
 # key, via the real socsec CLI. socsec's own test suite has no A3-big
 # COT reference vector (only A0, which uses incompatible OTP key-type
-# codes for this ROM -- see notes/2026-09-03-07-vbootrom-ast2600-stage3-
-# slice1-otp-keylist.md), so this generates ground truth locally instead
-# of relying on a pre-built fixture -- same approach as
-# notes/2026-09-03-11-vbootrom-ast2600-stage3-slice5-cot-regression.md,
-# now scripted instead of redone by hand.
+# codes for this ROM), so this generates ground truth locally instead of
+# relying on a pre-built fixture, scripted here rather than redone by
+# hand.
 #
 # Uses socsec's own generic BL1 test stub as the plaintext image (this
 # lab's real deployed SPL is already signed in place by the time a build

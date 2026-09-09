@@ -178,8 +178,7 @@ reuse it on later runs.
   one piece, prints what it computed (or a hash of it, for anything too
   large to print byte-by-byte over UART) over UART, and halts, so it can
   be cross-checked against an independent computation before the same
-  code is trusted in the real pipeline — see each file's own comment
-  and the matching notes entry.
+  code is trusted in the real pipeline — see each file's own comment.
 - `crt0.S` — shared entry point for all the diagnostics above
   (parameterized via `-DDIAG_ENTRY=<function>`, see Makefile).
 - `link.ld` / `link-test.ld` — the real boot ROM's and the diagnostics'

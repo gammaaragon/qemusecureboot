@@ -5,8 +5,7 @@
  * UART, then halts. The decisive test for this whole stage -- every
  * other diagnostic checked one piece in isolation against an
  * independent computation; this one checks whether they compose into a
- * correct accept/reject decision. See
- * notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md.
+ * correct accept/reject decision.
  */
 #include "verify.h"
 #include "uart.h"

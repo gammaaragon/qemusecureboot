@@ -170,9 +170,9 @@ enum verify_result verify_image(unsigned int image_base,
                 /*
                  * AES_OEM keys are always 32 bytes (AES-256) in this
                  * lab's real key layout (confirmed against socsec's
-                 * own tests/keys/aes-oem.bin size, see the slice 6a
-                 * notes entry) -- `par` (the RSA-length-style size
-                 * code) isn't meaningful for an AES key type and isn't
+                 * own tests/keys/aes-oem.bin size) -- `par` (the
+                 * RSA-length-style size code) isn't meaningful for an
+                 * AES key type and isn't
                  * consulted here. Read as raw dwords, not byteswapped:
                  * otp_read_dword()'s return value already reconstructs
                  * each 4-byte group in its true OTP-storage order once

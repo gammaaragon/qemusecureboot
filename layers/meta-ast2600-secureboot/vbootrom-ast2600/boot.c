@@ -2,17 +2,15 @@
 /*
  * The real boot flow, superseding stage1.S's unconditional copy+jump
  * now that real verification (verify.c, proven correct against the
- * real signed SPL and a corrupted negative case -- see
- * notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md) exists.
+ * real signed SPL and a corrupted negative case) exists.
  *
  * Mirrors real AST2600 silicon's own semantics: secure boot is opt-in
  * via an OTP fuse ("Enable Secure Boot", config DW0 bit 1 -- otp.c),
  * ANDed with a separate hardware-strap bit of the same name (scu.c)
  * unless OTP's "Ignore Secure Boot hardware strap" bit says not to
  * consult it -- both real silicon's actual semantics (see otp.h's own
- * comment on ignore_strap) and confirmed empirically under QEMU (see
- * notes/2026-09-03-16-vbootrom-ast2600-otp-strap.md). If the effective
- * result is disabled, this behaves exactly like stage 1 did -- copy
+ * comment on ignore_strap) and confirmed empirically under QEMU. If the
+ * effective result is disabled, this behaves exactly like stage 1 did -- copy
  * flash to address 0x0 and boot, unverified. If enabled, SPL must
  * verify against the OTP-stored key or this halts, UART message and
  * all, before ever copying anything to 0x0 -- a corrupted or unsigned

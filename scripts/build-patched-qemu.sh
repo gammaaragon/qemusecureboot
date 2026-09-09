@@ -6,21 +6,19 @@
 # History: QEMU 8.2.2 (the version Ubuntu 24.04 packages) had real bugs
 # in its hw/misc/aspeed_hace.c device model that made it impossible to
 # boot --secureboot with layer 3 (kernel-FIT signature verification)
-# turned on. This lab used to carry two local patches for those bugs
-# (see git history for layers/meta-ast2600-secureboot/qemu-patches/ if
-# you need them) -- as of QEMU 11.1.0 they're gone upstream, structurally
-# eliminated by a rewrite, not just patched over. See
-# notes/2026-09-03-01-qemu-11.1.0-hace-bugs-gone.md.
+# turned on -- as of QEMU 11.1.0 they're gone upstream, structurally
+# eliminated by a rewrite, not just patched over. No patch is carried for
+# them here any more.
 #
 # What's patched now, for a different reason: a new "ast2600-evb-secureboot"
 # machine type (layers/meta-ast2600-secureboot/qemu-patches/0001-...patch),
 # adding a virtual-boot-ROM hook for AST2600 that doesn't exist upstream --
-# see layers/meta-ast2600-secureboot/vbootrom-ast2600/ and
-# notes/2026-09-03-02-vbootrom-ast2600-stage1.md. This new machine type is
-# opt-in (amc->vbootrom) and doesn't touch the existing "ast2600-evb"
-# machine's own boot path at all, so this same patched binary still serves
-# --secureboot exactly as an unpatched one would -- confirmed by
-# regression-testing --secureboot against it, not just by reading the diff.
+# see layers/meta-ast2600-secureboot/vbootrom-ast2600/. This new machine
+# type is opt-in (amc->vbootrom) and doesn't touch the existing
+# "ast2600-evb" machine's own boot path at all, so this same patched
+# binary still serves --secureboot exactly as an unpatched one would --
+# confirmed by regression-testing --secureboot against it, not just by
+# reading the diff.
 #
 # CONFIG_ASPEED_ACRY's register-polling hang (see layer.conf) is unrelated
 # to any of this and is still not modeled in QEMU 11.1.1 -- the

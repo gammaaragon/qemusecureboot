@@ -1,7 +1,6 @@
-/* SPDX-License-Identifier: MIT */
-# ast2600 vbootrom -- see README.md for what this is and the notes/
-# entries under notes/2026-09-03-*-vbootrom-ast2600-*.md for the full
-# evidence chain behind each piece.
+# SPDX-License-Identifier: MIT
+# ast2600 vbootrom -- see README.md for what this is and how each piece
+# fits together.
 
 CROSS_COMPILE ?= arm-linux-gnueabi-
 CC       := $(CROSS_COMPILE)gcc
@@ -20,8 +19,8 @@ all: ast2600_bootrom.bin
 
 # --- the real boot flow: verifies against the OTP key (if secure boot
 # is fused on) before copying flash to 0x0 and jumping there; halts
-# instead if verification fails. Supersedes stage1.S (git history has
-# it), which always copied+jumped unconditionally. ---
+# instead if verification fails. Supersedes an earlier unconditional
+# copy+jump implementation with no verification at all. ---
 BOOTROM_OBJS := reset.o boot_start.o boot.o verify.o header.o otp.o scu.o \
                 bignum.o rsa_mod_exp.o pkcs15.o sha256.o sha512.o aes.o \
                 aes_ctr.o uart.o libc_min.o

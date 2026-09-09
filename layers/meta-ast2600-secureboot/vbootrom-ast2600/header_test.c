@@ -5,8 +5,9 @@
  * = 0x20000000 -- SPL is the first thing in the flash layout, so no
  * additional offset needed), prints every field and the checksum
  * verdict over UART, then halts. Cross-check target: this lab's real
- * deployed signed SPL, independently parsed offline in
- * notes/2026-09-03-04-vbootrom-ast2600-header-parsing.md.
+ * deployed signed SPL, independently parsed offline (e.g. with a small
+ * Python struct-unpack script against the same ROT_HEADER layout) before
+ * trusting this code's own parse of it.
  */
 #include "header.h"
 #include "uart.h"

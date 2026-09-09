@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# Runs the full positive/negative test matrix this project's stage-2/3
-# work was verified against, so it can be re-run by anyone from a clone
-# -- not just reconstructed by hand from notes/ prose. See README.md's
-# "Layout" section and notes/2026-09-03-*.md for the design behind each
+# Runs the full positive/negative test matrix this project's
+# implementation was verified against, so it can be re-run by anyone from
+# a clone. See README.md's "Layout" section for the design behind each
 # piece being tested.
 #
 # Covers:
@@ -13,8 +12,8 @@
 #     ground truth (verify result for mode2; decrypted-region hash
 #     cross-checked against the real plaintext for the AES modes).
 #   - A self-generated COT-suffixed BL1 image (gen-cot-image.sh) --
-#     socsec's own test suite has no A3-big COT vectors (see the
-#     stage-3 slice-1 notes entry), so this signs one locally instead.
+#     socsec's own test suite has no A3-big COT vectors, so this signs
+#     one locally instead.
 #   - This lab's own real signed SPL + real OTP key, if both are
 #     present locally (gen-lab-otp-image.sh for the OTP image; the
 #     signed SPL needs a real `build-image.sh --secureboot` run, a

@@ -42,10 +42,7 @@ struct aes_decrypt_info {
  * constants at runtime -- see bignum.c), and checks the PKCS#1 v1.5
  * padding + digest match. RSA key size (1024/2048/3072/4096) and SHA
  * mode (224/256/384/512) are both read from OTP's own rsa_len/sha_mode
- * config fields -- see notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md
- * for the original RSA4096/SHA512-only version and
- * notes/2026-09-03-07-vbootrom-ast2600-stage3-slice1-otp-keylist.md
- * onward for stage 3's broader coverage. If OTP's "Enable image
+ * config fields at runtime, not hardcoded. If OTP's "Enable image
  * encryption" bit is set, also locates the AES key/IV and fills
  * *aes_info (pass NULL if the caller doesn't care) -- mode2aes1 (plain
  * AES_OEM key in OTP) only; mode2aes2 (RSA-wrapped key) returns

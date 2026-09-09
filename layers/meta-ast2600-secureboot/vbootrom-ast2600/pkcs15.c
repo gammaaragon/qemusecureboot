@@ -20,8 +20,7 @@
  * prefix that socsec never wrote. Diagnosed by printing the decrypted
  * block's boundary bytes and comparing against Python's own
  * pow(sig, e, n): the digest started right after a single 0x00, with
- * no DER prefix in between at all. See
- * notes/2026-09-03-05-vbootrom-ast2600-rsa-verify.md.
+ * no DER prefix in between at all.
  */
 #include "pkcs15.h"
 #include "libc_min.h"

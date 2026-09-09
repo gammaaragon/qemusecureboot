@@ -11,8 +11,7 @@
 # verification against, so this generates one directly with the real
 # `otptool` (its own #!/usr/bin/env nativepython3 shebang only works
 # inside a bitbake-sourced environment, so this uses a throwaway venv
-# instead -- same approach as notes/2026-09-03-03-vbootrom-ast2600-stage2.md,
-# now scripted instead of redone by hand every session).
+# instead, scripted here rather than redone by hand every session).
 #
 # Needs the evb-ast2600-secureboot build's socsec-native sysroot and
 # u-boot-aspeed-sdk sources to already exist (i.e. `build-image.sh
@@ -60,9 +59,8 @@ otpTool().run(['otptool', 'make_otp_image', '--key_folder', '$SOCSEC_SRC',
 #   config region starting 0x2000   <- otp-conf.bin verbatim
 #   rest zero
 # otptool's own otp-all.image is a different, header-prefixed,
-# tool-internal format -- not what QEMU's loader expects directly. See
-# notes/2026-09-03-03-vbootrom-ast2600-stage2.md for how this was found
-# (comparing byte offsets of the known modulus bytes between the two).
+# tool-internal format -- not what QEMU's loader expects directly (found
+# by comparing byte offsets of the known modulus bytes between the two).
 FLAT="$OUT_DIR/otp-flat.bin"
 truncate -s 16384 "$FLAT"
 dd if="$OUT_DIR/otp-data.bin" of="$FLAT" conv=notrunc status=none

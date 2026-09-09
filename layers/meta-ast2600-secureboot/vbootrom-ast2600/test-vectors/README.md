@@ -14,10 +14,9 @@ Each `2600-a3_<mode>-<rsa>-<sha>-big/` directory holds the 4 files
 representations of the same two files, not used here):
 
 - `bl1.signed.bin` — a real, validly signed BL1 test image (`socsec`'s
-  own generic small stub, not this lab's real SPL — see the stage-3
-  slice-5 notes entry for why: this lab's own signed SPL is already
-  overwritten in place by the time a build completes, so no unsigned
-  original survives to re-sign against every mode).
+  own generic small stub, not this lab's real SPL: this lab's own signed
+  SPL is already overwritten in place by the time a build completes, so
+  no unsigned original survives to re-sign against every mode).
 - `bl1.bin` — the plaintext before signing (and, for the `mode2aes*`
   encrypted variants, before encryption too) — used as the correctness
   oracle for AES decryption: `run-tests.sh` decrypts `bl1.signed.bin`'s
@@ -40,7 +39,7 @@ key RSA-wrapped, unwrapped with an OTP-stored private exponent.
 **Coverage**: `rsa{2048,3072,4096}` × `sha{256,384,512}`, all three
 modes — 27 combinations, all real ground truth. **Not included**:
 `rsa1024`/`sha224` (no A3-big vectors exist in `socsec`'s own test suite
-for these — see the stage-3 notes entries) and any COT-suffixed variant
+for these) and any COT-suffixed variant
 (also A0-only in `socsec`'s test suite — slice 5's own COT test image is
 self-generated instead, at test time, not a static fixture; see
 `gen-cot-image.sh`).

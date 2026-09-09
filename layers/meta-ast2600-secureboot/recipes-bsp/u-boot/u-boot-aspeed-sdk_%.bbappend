@@ -29,8 +29,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 # U-Boot's .config automatically by the existing find_cfgs()/
 # merge_config.sh machinery in u-boot-configure.inc -- the same mechanism
 # already merging u-boot_flash_64M.cfg, nothing new to wire up. See the
-# fragment's own comment and notes/2026-09-01-01-secure-boot-fit-and-otp-signing.md
-# for the full evidence chain.
+# fragment's own comment for the full story.
 # =====================================================================
 DEPENDS += "openssl-native"
 
@@ -62,8 +61,7 @@ SRC_URI += "file://0001-crypto-aspeed_hace-send-final-hash-trigger-without-.patc
 # as the more likely fault, present identically regardless of
 # CONFIG_SHA_PROG_HW_ACCEL since hw_sha512()'s one-shot path
 # (CONFIG_SHA_HW_ACCEL alone) uses the same 2-entry SG list via
-# sha_digest(). See notes/2026-09-01-01-secure-boot-fit-and-otp-signing.md
-# for the full chain -- this remains an open, documented issue, not fixed.
+# sha_digest(). This remains an open, documented issue, not fixed.
 
 # =====================================================================
 # Layer 1: ROM -> SPL, ASPEED's real hardware root-of-trust tooling.

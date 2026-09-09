@@ -11,8 +11,9 @@
  * update/finalize logic are unmodified. SHA-384 (initial digest values
  * SHA384_H0..7 below, real FIPS 180-4 constants from the same vendored
  * lib/sha512.c, not derived) was originally dropped as unused by this
- * lab's one signing mode -- added back for stage 3's broader coverage,
- * see notes/2026-09-03-*-vbootrom-ast2600-stage3-slice3-*.md.
+ * lab's one signing mode -- added back once RSA key size and SHA mode
+ * became runtime-configurable, reading both from OTP instead of assuming
+ * RSA4096/SHA512 (see verify.h's own comment).
  */
 #include "libc_min.h"
 #include "sha512.h"
