@@ -105,21 +105,55 @@ Runs the full positive/negative test matrix this project's implementation
 was verified against — not a description of testing that was once done
 by hand, an actual re-runnable suite. Builds every diagnostic, then:
 
-Every test below goes through `run_diag()`, the script's shared QEMU
-driver: `qemu-system-arm -machine ast2600-evb-secureboot -bios
-<diagnostic>.bin -drive file=<image>,if=mtd,format=raw -blockdev
-driver=file,filename=<otp-flat.bin>,node-name=otp -global
-aspeed-otp.drive=otp -serial stdio ...`, run in the background with its
-own timeout-kill, output captured to a log file. That puts a
-diagnostic binary (see "Layout" below — a real function from the boot
-ROM's own source, linked with a throwaway `crt0.S` entry point instead
-of the real boot flow) at the CPU's reset address, a real signed test
-image at the real flash address, and real OTP fuse content behind
-QEMU's real `aspeed_sbc` MMIO registers — then greps the captured UART
-output for the exact result string (`result=OK`, `result=BAD_SIGNATURE`,
-etc.) the diagnostic printed before it halted. Nothing here is mocked;
-only the entry point and the surrounding harness differ from a real
-boot.
+**Diagnostic binaries.** The Makefile builds several tiny standalone ARM
+programs, each sharing the exact same real production code (`verify.c`,
+`otp.c`, `rsa_mod_exp.c`, `sha256.c`, etc. — not test doubles) but
+linked with a different entry point via `crt0.S`'s `DIAG_ENTRY` macro:
+
+```
+crt0_verify.o: crt0.S
+    $(CC) $(CFLAGS) -DDIAG_ENTRY=verify_test_main -c -o $@ $<
+```
+
+`crt0.S` is generic boot glue — sets up a stack, calls whatever
+`DIAG_ENTRY` was `#define`d to, then parks in a `wfe` loop forever. So
+`verify_test.elf` is: real stack setup → `verify_test_main()` (in
+`verify_test.c`) → calls the real `verify_image()` from `verify.c` →
+prints `result=OK` / `result=BAD_SIGNATURE` / `result=BAD_CHECKSUM`
+over UART → halts. It never copies anything to `0x0` or jumps to SPL
+like the real boot ROM does — it just runs one real function and
+reports what it returned.
+
+**Runs under QEMU.** `run_diag()` in `run-tests.sh` boots that
+diagnostic `.bin` in place of the real boot ROM:
+
+```bash
+qemu-system-arm -machine ast2600-evb-secureboot -m 1G \
+    -bios verify_test.bin \
+    -drive file=<test-vector bl1.signed.bin>,if=mtd,format=raw \
+    -blockdev driver=file,filename=<test-vector otp-flat.bin>,node-name=otp \
+    -global aspeed-otp.drive=otp \
+    -serial stdio -serial null -display none
+```
+
+So it's real hardware emulation throughout: `-bios` puts the diagnostic
+at the CPU's real reset address, `-drive` puts a real `socsec`-signed
+image at the real flash address the code reads from, `-blockdev`/
+`aspeed-otp.drive` puts real OTP fuse content behind QEMU's real
+`aspeed_sbc` MMIO registers. `verify_image()` does genuine
+register-level OTP reads and RSA math against that data, on an
+emulated ARM core — nothing is mocked. `run-tests.sh` captures the
+UART output to a log file and `grep`s for the exact `result=OK`/
+`result=BAD_SIGNATURE` string to decide pass/fail.
+
+**In isolation.** Each diagnostic isolates one stage rather than only
+observing whether a full boot succeeded or hung. `otp_test.c` checks
+`otp.c`'s register reads alone; `header_test.c` checks the
+`ROT_HEADER` parser alone; `bignum_test.c`/`rsa_test.c` check the
+Montgomery/RSA math alone against an independent Python computation;
+`verify_test.c` is the one that composes everything into the real
+accept/reject decision. If something's wrong, you get a specific
+stage's wrong output, not just "boot failed."
 
 - The real 27-combination `socsec` reference-vector matrix in
   `test-vectors/` (`mode2` × 9, `mode2aes1` × 9, `mode2aes2` × 9 —
