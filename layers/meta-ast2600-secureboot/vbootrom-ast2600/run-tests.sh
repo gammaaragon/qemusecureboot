@@ -276,7 +276,7 @@ fi
 echo
 echo "=== OTP-enable AND hw-strap gate (boot.c) ==="
 lab_otp="$HERE/work/otp-on/otp-flat.bin"
-gate_image="$HERE/work/rsa1024-sha224/bl1.padded.bin"
+gate_image="$WORK/rsa1024-sha224/bl1.padded.bin"
 if [ ! -f "$lab_otp" ]; then
     echo "  SKIP  (run ./gen-lab-otp-image.sh first)"
 elif [ ! -f "$gate_image" ]; then
