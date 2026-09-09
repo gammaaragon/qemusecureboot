@@ -12,6 +12,6 @@ Currently adds one lm75 temperature sensor at i2c bus@1e78a000/i2c@480,
 address 0x4d, via a `phosphor-hwmon` bbappend.
 
 Not upstream material — this is lab/tutorial-specific hardware description,
-kept out of the pristine `~/openbmc` clone so that tree stays clean for
-sending real patches upstream. See `../../CLAUDE.md` and
+kept out of a pristine OpenBMC clone so that tree stays clean for
+sending real patches upstream. See the repo root `README.md` and
 `scripts/build-image.sh` for how it's wired into a build.

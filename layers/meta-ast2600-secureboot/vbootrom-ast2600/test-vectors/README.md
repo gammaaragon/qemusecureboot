@@ -5,9 +5,8 @@
 Real, pre-built golden test fixtures from ASPEED Technology's `socsec`
 2.0.12 (MIT-licensed — see `LICENSE-socsec.txt`), copied here so this
 project's positive/negative test matrix is reproducible from a clone
-alone, not dependent on `~/openbmc`'s build tree (whose `tmp/` this lab's
-own `CLAUDE.md` already flags as something that might get dropped and
-rebuilt from sstate-cache someday) or on regenerating them by hand.
+alone, not dependent on regenerating them by hand or on a full OpenBMC
+build tree existing locally.
 
 Each `2600-a3_<mode>-<rsa>-<sha>-big/` directory holds the 4 files
 `run-tests.sh` actually needs, out of `socsec`'s own larger set (the rest
@@ -27,15 +26,13 @@ representations of the same two files, not used here):
 - `otp-data.bin` / `otp-conf.bin` — the raw OTP data-region and
   config-region contents for that mode/key-size/hash combination —
   `run-tests.sh` assembles these into the flat image format QEMU's
-  `-blockdev`/`aspeed-otp` expects (see `otp.c`'s own README section, or
-  `notes/2026-09-03-03-vbootrom-ast2600-stage2.md`, for why `otptool`'s
-  own `otp-all.image` output isn't that format directly).
+  `-blockdev`/`aspeed-otp` expects (see `otp.c`'s own comment for why
+  `otptool`'s own `otp-all.image` output isn't that format directly).
 
 **Naming**: `2600` = AST2600, `a3` = silicon revision A3 (this lab's own
-real OTP key-list encoding — see
-`notes/2026-09-03-07-vbootrom-ast2600-stage3-slice1-otp-keylist.md` for
-why this matters: A0's encoding, which most of `socsec`'s own test suite
-defaults to, uses different key-type *values* than A3), `big` =
+real OTP key-list encoding — A0's encoding, which most of `socsec`'s own
+test suite defaults to, uses different key-type *values* than A3, see
+`otp.h`'s own header comment), `big` =
 `rsa_key_order` (this lab's own real convention). `mode2` = RSA+SHA,
 no AES; `mode2aes1` = AES key stored plainly in OTP; `mode2aes2` = AES
 key RSA-wrapped, unwrapped with an OTP-stored private exponent.

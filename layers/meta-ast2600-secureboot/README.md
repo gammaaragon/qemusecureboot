@@ -39,10 +39,11 @@ change, not a rebuild-from-scratch:
 3. **U-Boot proper → kernel/ramdisk/dtb**. The same FIT-signature mechanism
    one level up (`kernel-fit-image.bbclass`, `FIT_KERNEL_SIGN_ENABLE`,
    defaults to `UBOOT_SIGN_ENABLE`). `ast2600_openbmc_spl_defconfig` already
-   ships `CONFIG_FIT_SIGNATURE=y`. This is the layer article 1 showed as
-   hash-only (`Verifying Hash Integrity ... sha256+ OK`) — now a real
-   signature check (`sha512,rsa4096:rsa_oem_fitimage_key+ OK`), also live
-   and working under QEMU, kernel boots all the way to a login prompt.
+   ships `CONFIG_FIT_SIGNATURE=y`. With `FIT_KERNEL_SIGN_ENABLE` off, this
+   layer only checks a hash (`Verifying Hash Integrity ... sha256+ OK`);
+   turned on, it's a real signature check
+   (`sha512,rsa4096:rsa_oem_fitimage_key+ OK`), also live and working
+   under QEMU, kernel boots all the way to a login prompt.
 
 Layers 2 and 3 are both driven by one `UBOOT_SIGN_ENABLE = "1"` plus a
 generated-at-build-time RSA keypair (`do_generate_fit_signing_key`, never

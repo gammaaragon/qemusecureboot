@@ -6,15 +6,12 @@ A virtual boot ROM for QEMU's `ast2600-evb-secureboot` machine (added by
 `layers/meta-ast2600-secureboot/qemu-patches/`), emulating layer 1 of
 this lab's secure-boot chain (ROM verifies SPL against an OTP-stored RSA
 public key) — the one layer that used to be only a build-time artifact,
-never exercised at runtime under QEMU. See
-`notes/2026-09-03-{02,03,04,05,06}-vbootrom-ast2600-*.md` (stages 1–2,
-the original single-mode implementation) and
-`notes/2026-09-03-{07,08,09,10,11,12,13,14}-vbootrom-ast2600-stage3-*.md`
-(stage 3, broader mode coverage) and
-`notes/2026-09-03-{16,17}-vbootrom-ast2600-*.md` (the two gaps closed
-after stage 3: OTP hardware-strap fidelity, `rsa1024`/`sha224` ground
-truth) for the full design rationale and debugging trail behind the
-current implementation.
+never exercised at runtime under QEMU. Built in stages: a single-mode
+implementation first (RSA-4096/SHA-512 only), then broadened to the full
+RSA-size × SHA-mode matrix plus both AES-encrypted key-storage modes,
+then two follow-up gap closures (OTP hardware-strap fidelity,
+`rsa1024`/`sha224` ground truth) — see "Layout" and "Testing" below for
+what each piece actually does.
 
 **Current status: real RSA/SHA verification across the full
 1024/2048/3072/4096-bit × SHA-224/256/384/512 matrix, both AES-encrypted
@@ -24,10 +21,13 @@ truth.** Real silicon's own gate is two bits, ANDed: the OTP
 config-region "Enable Secure Boot" bit and a separate hardware-strap bit
 of the same name (unless OTP's "Ignore Secure Boot hardware strap" bit
 says not to consult the strap) — `boot.c` now implements that AND, not
-just the config bit alone (see `notes/2026-09-03-16-vbootrom-ast2600-otp-strap.md`
-for why this needed two separate QEMU machine types,
+just the config bit alone. This needed two separate QEMU machine types,
 `ast2600-evb-secureboot` and `ast2600-evb-secureboot-strapoff`, rather
-than a runtime flag). If the effective result is disabled, this boots
+than a runtime flag, because QEMU's own `aspeed_otp`/`aspeed_sbc` device
+models never load OTP strap content into the SCU's `hw-strap1` register
+the way real silicon does — that register can only be set per-machine-class
+default or via an explicit `-global` override at startup, not toggled
+from OTP content at runtime. If the effective result is disabled, this boots
 unverified (matching real fused-off silicon). If enabled, verifies SPL's
 signature against the OTP-stored key (RSA key size, SHA mode, and header
 offset all read from OTP's own config fields, not hardcoded) before
@@ -47,9 +47,11 @@ and COT-suffixed BL1), a self-signed equivalent generating real ground
 truth locally instead.
 
 AES-GCM, ECDSA, and the BL2/BL3 chain-of-trust mechanism are explicitly
-out of scope — see `~/.claude/plans/fuzzy-weaving-ripple.md` (stages
-1–2) and `~/.claude/plans/whimsical-frolicking-peach.md` (stage 3,
-including its "Explicitly out of scope" section) for the full reasoning.
+out of scope: this lab's real key config never uses AES-GCM or ECDSA,
+and layers 2/3 of this lab's own boot chain already use a structurally
+different mechanism (FIT/mkimage) than BL2/BL3's own separate
+chain-of-trust, so implementing BL2/BL3 wouldn't exercise anything this
+lab's real boot flow depends on.
 
 ## Building
 
@@ -87,11 +89,10 @@ integration yet; boot it directly:
 ```
 
 A flat OTP image isn't something `otptool` produces directly (its own
-`otp-all.image` is a different, header-prefixed format) — see the
-notes entries under `notes/2026-09-03-03-*.md` onward for how to
-generate one from `otptool`'s separate `otp-data.bin`/`otp-conf.bin`
-components, or just use `gen-lab-otp-image.sh` below, which does this
-for you.
+`otp-all.image` is a different, header-prefixed format) — it's built
+here by concatenating `otptool`'s separate `otp-data.bin`/`otp-conf.bin`
+components at the offsets QEMU's `aspeed-otp` device expects. Use
+`gen-lab-otp-image.sh` below, which does this for you.
 
 ## Testing
 
@@ -100,14 +101,9 @@ for you.
 ./run-tests.sh --keep-going # run everything, report all failures at the end
 ```
 
-Runs the full positive/negative test matrix this project's stage-2/3
-work was verified against — not a description of testing that was once
-done by hand, an actual re-runnable suite (fixing this gap, previously
-real: every fixture used to live only in a session-scratch directory
-that doesn't survive past that session, and the OTP-image/COT-image
-generation steps were redone by hand at every slice instead of scripted,
-against this lab's own `CLAUDE.md` ground rule to script anything done
-twice). Builds every diagnostic, then:
+Runs the full positive/negative test matrix this project's implementation
+was verified against — not a description of testing that was once done
+by hand, an actual re-runnable suite. Builds every diagnostic, then:
 
 - The real 27-combination `socsec` reference-vector matrix in
   `test-vectors/` (`mode2` × 9, `mode2aes1` × 9, `mode2aes2` × 9 —
@@ -155,8 +151,7 @@ reuse it on later runs.
 - `boot_start.S` / `boot.c` — the real boot flow: reads the OTP
   secure-boot-enable bit, verifies (if enabled) or skips straight to
   copying flash to `0x0` and jumping there (if not) — see `boot.c`'s
-  own comment for the full decision logic, and `notes/2026-09-03-06-*.md`
-  for how it was tested.
+  own comment for the full decision logic.
 - `verify.c` — orchestrates the actual verification: `header.c` (parses
   the signed image's `ROT_HEADER`), `otp.c` (reads the OTP-stored key(s)
   and secure-boot config, including the key-list-header scan

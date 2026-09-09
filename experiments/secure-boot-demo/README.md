@@ -6,14 +6,12 @@ Five demonstration experiments proving what this lab's boot chain
 actually protects: **integrity** (accidental corruption is caught) is
 not the same guarantee as **authenticity anchored to a hardware root of
 trust** (a deliberate, signed substitution is caught only where a real
-root of trust exists to check it against). Built after this repo's own
-[[vboot ROM]] (`layers/meta-ast2600-secureboot/vbootrom-ast2600/`) made
-layer 1 (ROM verifies SPL against an OTP-fused key) exercisable at
+root of trust exists to check it against). Built after this repo's own vboot ROM
+(`layers/meta-ast2600-secureboot/vbootrom-ast2600/`, see its own README)
+made layer 1 (ROM verifies SPL against an OTP-fused key) exercisable at
 runtime under QEMU — the precondition that used to make "D" (the
 trust-anchor limit) something this lab could only state, not
-demonstrate. See `~/.claude/plans/whimsical-frolicking-peach.md` for the
-full design and `notes/2026-09-04-01-secure-boot-demo-experiments.md`
-for the build/debug trail.
+demonstrate.
 
 **Current status: all five experiments pass against real QEMU boot
 output, `./run-all.sh --keep-going` reports `5 passed, 0 failed`.**

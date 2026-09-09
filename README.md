@@ -44,8 +44,9 @@ in `conf/local.conf` before building.)
 
 **2. `qemu-system-arm`.** The stock distro package works for `--base` and
 `--lab`. The `--secureboot` variant (real RSA/SHA signature verification
-under QEMU) needs a locally built QEMU 11.1.x with one small local patch
-(a new `ast2600-evb-secureboot` machine type carrying the vboot ROM hook —
+under QEMU) needs a locally built QEMU 11.1.x with two small local
+patches (adding a new `ast2600-evb-secureboot` machine type that carries
+the vboot ROM hook, and defaulting its secure-boot hardware strap on —
 see `layers/meta-ast2600-secureboot/qemu-patches/`). Build it with:
 
 ```
