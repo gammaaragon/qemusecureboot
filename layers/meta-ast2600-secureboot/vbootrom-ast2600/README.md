@@ -105,6 +105,22 @@ Runs the full positive/negative test matrix this project's implementation
 was verified against — not a description of testing that was once done
 by hand, an actual re-runnable suite. Builds every diagnostic, then:
 
+Every test below goes through `run_diag()`, the script's shared QEMU
+driver: `qemu-system-arm -machine ast2600-evb-secureboot -bios
+<diagnostic>.bin -drive file=<image>,if=mtd,format=raw -blockdev
+driver=file,filename=<otp-flat.bin>,node-name=otp -global
+aspeed-otp.drive=otp -serial stdio ...`, run in the background with its
+own timeout-kill, output captured to a log file. That puts a
+diagnostic binary (see "Layout" below — a real function from the boot
+ROM's own source, linked with a throwaway `crt0.S` entry point instead
+of the real boot flow) at the CPU's reset address, a real signed test
+image at the real flash address, and real OTP fuse content behind
+QEMU's real `aspeed_sbc` MMIO registers — then greps the captured UART
+output for the exact result string (`result=OK`, `result=BAD_SIGNATURE`,
+etc.) the diagnostic printed before it halted. Nothing here is mocked;
+only the entry point and the surrounding harness differ from a real
+boot.
+
 - The real 27-combination `socsec` reference-vector matrix in
   `test-vectors/` (`mode2` × 9, `mode2aes1` × 9, `mode2aes2` × 9 —
   `rsa{2048,3072,4096}` × `sha{256,384,512}`), each checked against real
