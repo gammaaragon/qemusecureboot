@@ -1,0 +1,6 @@
+*.o
+*.elf
+*.bin
+!test-vectors/**/*.bin
+link.map
+work/

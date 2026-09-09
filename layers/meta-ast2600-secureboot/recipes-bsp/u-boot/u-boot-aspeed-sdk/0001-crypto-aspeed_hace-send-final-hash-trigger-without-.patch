@@ -1,0 +1,109 @@
+From 9bc1e78fb9ff46b04ad647b52f6483bbde07c850 Mon Sep 17 00:00:00 2001
+From: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+Date: Wed, 2 Sep 2026 08:30:42 -0500
+Subject: [PATCH] crypto: aspeed_hace: send final hash trigger without SG mode
+
+QEMU's aspeed_hace model (hw/misc/aspeed_hace.c) documents that it was
+built against "the aspeed sdk kernel driver," which disables SG mode
+specifically for hash_final(). This driver instead keeps HACE_SG_EN set
+for every trigger, including the finishing one -- fine on real hardware,
+but it makes QEMU's accumulate-mode padding heuristic (has_padding())
+run its "does this chunk's tail look like a length trailer" check on
+ordinary intermediate hash data too, for every hw_sha_update() call
+along the way.
+
+That's harmless for small (SPL-sized) images verified in one or two
+triggers, but for a multi-MB kernel FIT needing many more update()
+triggers it both crashed QEMU (a real, confirmed out-of-bounds read in
+QEMU's own device model, root-caused via GDB against a locally-built
+QEMU with debug symbols) and, once that specific read is bounds-checked,
+silently computed the wrong hash instead.
+
+Sending the final trigger without HACE_SG_EN, via the plain-buffer path
+QEMU's model already handles correctly and combines with its own
+iov_count-cached accumulate-mode state, matches the calling convention
+QEMU actually expects -- no QEMU changes required for this to work.
+
+See notes/2026-09-01-01-secure-boot-fit-and-otp-signing.md in the
+ast2600-lab repo for the full investigation.
+
+Upstream-Status: Inappropriate [works around a QEMU-only emulation
+mismatch (hw/misc/aspeed_hace.c's accumulate-mode padding heuristic vs.
+this driver always keeping HACE_SG_EN set); real AST2600 hardware has no
+such issue, so there is nothing to submit upstream to u-boot for]
+
+Signed-off-by: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+---
+ drivers/crypto/aspeed_hace.c | 46 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 41 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/crypto/aspeed_hace.c b/drivers/crypto/aspeed_hace.c
+index f5a3cdd..82fad53 100644
+--- a/drivers/crypto/aspeed_hace.c
++++ b/drivers/crypto/aspeed_hace.c
+@@ -245,10 +245,49 @@ int hw_sha_update(struct hash_algo *algo, void *hash_ctx, const void *buf,
+ 	return rc;
+ }
+ 
++/*
++ * ast2600-lab local fix (2026-09-02): QEMU's aspeed_hace model documents
++ * (hw/misc/aspeed_hace.c) that it was built against "the aspeed sdk kernel
++ * driver," which disables SG mode specifically for hash_final(). This
++ * driver instead keeps HACE_SG_EN set for every trigger, including the
++ * finishing one -- fine on real hardware, but it makes QEMU's
++ * accumulate-mode padding heuristic (has_padding()) run its "does this
++ * chunk's tail look like a length trailer" check on ordinary intermediate
++ * hash data too, for every hw_sha_update() call along the way. That's
++ * harmless for small (SPL-sized) images verified in one or two triggers,
++ * but for a multi-MB kernel FIT needing many more update() triggers, it
++ * both crashed QEMU (out-of-bounds read, root-caused via GDB + a locally
++ * patched QEMU build -- see notes/2026-09-01-01-secure-boot-fit-and-otp-signing.md)
++ * and, once that specific read was bounds-checked, silently computed the
++ * wrong hash instead. Sending the final trigger without SG_EN, via the
++ * plain-buffer path QEMU's model already handles correctly and combines
++ * with its own iov_count-cached accumulate-mode state, matches the
++ * calling convention QEMU actually expects -- no QEMU changes required
++ * for this to work correctly.
++ */
++static int hash_trigger_direct(struct aspeed_hash_ctx *ctx, void *src, int hash_len)
++{
++	if (readl(base + ASPEED_HACE_STS) & HACE_HASH_BUSY) {
++		debug("HACE error: engine busy\n");
++		return -EBUSY;
++	}
++	/* Clear pending completion status */
++	writel(HACE_HASH_ISR, base + ASPEED_HACE_STS);
++
++	writel((u32)src, base + ASPEED_HACE_HASH_SRC);
++	writel((u32)ctx->digest, base + ASPEED_HACE_HASH_DIGEST_BUFF);
++	writel((u32)ctx->digest, base + ASPEED_HACE_HASH_KEY_BUFF);
++	writel(hash_len, base + ASPEED_HACE_HASH_DATA_LEN);
++	writel(ctx->method & ~HACE_SG_EN, base + ASPEED_HACE_HASH_CMD);
++
++	return aspeed_hace_wait_completion(base + ASPEED_HACE_STS,
++					   HACE_HASH_ISR,
++					   1000 + (hash_len >> 3));
++}
++
+ int hw_sha_finish(struct hash_algo *algo, void *hash_ctx, void *dest_buf, int size)
+ {
+ 	struct aspeed_hash_ctx *ctx = hash_ctx;
+-	struct aspeed_sg *sg = ctx->sg;
+ 	int rc;
+ 
+ 	if (size < ctx->digest_size) {
+@@ -258,10 +297,7 @@ int hw_sha_finish(struct hash_algo *algo, void *hash_ctx, void *dest_buf, int si
+ 	}
+ 	aspeed_ahash_fill_padding(ctx, 0);
+ 
+-	sg[0].addr = (u32)ctx->buffer;
+-	sg[0].len = ctx->bufcnt | HACE_SG_LAST;
+-
+-	rc = hash_trigger(ctx, ctx->bufcnt);
++	rc = hash_trigger_direct(ctx, ctx->buffer, ctx->bufcnt);
+ 	memcpy(dest_buf, ctx->digest, ctx->digest_size);
+ 
+ 	free(ctx);
+-- 
+2.43.0
+

@@ -1,0 +1,156 @@
+From d6b8f3a92559c12e88e923dabdd499fca09c6761 Mon Sep 17 00:00:00 2001
+From: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 12:14:54 -0500
+Subject: [PATCH] hw/arm/aspeed: add ast2600-evb-secureboot machine with a
+ virtual boot ROM
+
+AST2600's SoC realize function never creates/maps the generic
+soc->vbootrom MemoryRegion the way AST2700's does, and the boot flash
+stays mapped at address 0x0 for every existing AST2600 machine
+(ast2600-evb, rainier-bmc, etc.) -- unlike AST2700, which frees address
+0x0 for vbootrom by relocating its own SPI boot flash to 0x100000000.
+
+This adds a new, separate machine type, ast2600-evb-secureboot, that
+opts into amc->vbootrom instead of touching any existing AST2600
+machine. When set, aspeed_machine_init() now skips the existing
+aspeed_install_boot_rom() flash-alias at address 0x0 (avoiding a
+mapping collision) and, if the SoC class didn't already create its own
+vbootrom region (AST2600 never does; AST2700 always does), creates and
+overlays one here instead -- opt-in per *machine* class via
+amc->vbootrom, not per SoC, so every other AST2600 machine using this
+same SoC class is completely unaffected.
+
+The region is sized 0x4020000 (64 MiB + 128 KiB): the full boot flash
+so SPL's own RAM boot-device loader (common/spl/spl_ram.c) can find the
+next-stage 'uboot' FIT image it expects at a fixed address, plus
+headroom for the real verify pipeline's code and stack (RSA modexp's
+pow_mod() alone uses ~2 KiB of stack for its 128-word arrays at
+RSA4096).
+
+Developed and tested against ast2600-lab's own secureboot variant --
+see layers/meta-ast2600-secureboot/vbootrom-ast2600/ in that repo for
+the accompanying virtual boot ROM firmware (now doing real RSA-4096/
+SHA-512 verification against the OTP-stored key, not just plumbing),
+and notes/2026-09-03-*-vbootrom-ast2600-*.md for the full evidence
+chain.
+
+Signed-off-by: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+---
+ hw/arm/aspeed.c             | 50 ++++++++++++++++++++++++++++++++++++-
+ hw/arm/aspeed_ast2600_evb.c | 29 +++++++++++++++++++++
+ 2 files changed, 78 insertions(+), 1 deletion(-)
+
+diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
+index a48c442..87b8e09 100644
+--- a/hw/arm/aspeed.c
++++ b/hw/arm/aspeed.c
+@@ -230,7 +230,7 @@ static void aspeed_machine_init(MachineState *machine)
+         sdhci_attach_drive(&bmc->soc->emmc.slots[0], emmc0, true, boot_emmc);
+     }
+ 
+-    if (!bmc->mmio_exec) {
++    if (!bmc->mmio_exec && !amc->vbootrom) {
+         DeviceState *dev = ssi_get_cs(bmc->soc->fmc.spi, 0);
+         BlockBackend *fmc0 = dev ? m25p80_get_blk(dev) : NULL;
+ 
+@@ -244,6 +244,54 @@ static void aspeed_machine_init(MachineState *machine)
+     }
+ 
+     if (amc->vbootrom) {
++        /*
++         * ast2600-lab: SoC classes that want a virtual boot ROM (so far
++         * only AST2700) create and map soc->vbootrom themselves at
++         * realize time, at an address freed up by relocating their SPI
++         * boot flash elsewhere. AST2600 keeps flash at address 0x0 for
++         * every other machine using this same SoC class (ast2600-evb,
++         * rainier-bmc, etc.) and can't relocate it without touching all
++         * of them, so for SoCs that didn't already create the region
++         * (memory_region_size() still 0), overlay it here instead --
++         * opt-in per *machine* class via amc->vbootrom, not per SoC.
++         * See hw/arm/aspeed_ast2600_evb.c's "ast2600-evb-secureboot".
++         */
++        if (!memory_region_size(&bmc->soc->vbootrom)) {
++            /*
++             * ast2600-lab: sized at flash size (0x4000000, the w25q512jv
++             * this lab uses) + headroom, not just enough for our own
++             * code -- SPL's own RAM boot-device loader
++             * (common/spl/spl_ram.c) looks for the next-stage "uboot"
++             * FIT image at a fixed address (CONFIG_SPL_LOAD_FIT_ADDRESS,
++             * 0x10000 for this board -- include/configs/evb_ast2600_spl.h),
++             * which only exists if flash content beyond SPL itself is
++             * also visible at address 0x0, exactly as
++             * aspeed_install_boot_rom()'s full-flash copy already
++             * provides for the *unverified* boot path. Confirmed
++             * empirically: a 64KB-only copy (just enough for SPL itself,
++             * CONFIG_SPL_MAX_SIZE) left SPL unable to find that FIT and
++             * looping "Trying to boot from RAM" forever -- traced
++             * cpu_reset/arm_cpu_reset to rule out a hardware/watchdog
++             * reset first (zero fired after initial bring-up), which
++             * pointed at spl.c's own software retry instead.
++             *
++             * 0x20000 (128 KiB) of headroom above the flash-sized copy
++             * destination, not just enough for the tiny stage-1 copy
++             * loop: the real verify pipeline's call chain (RSA modexp's
++             * pow_mod() alone uses ~2 KiB of stack for its 128-word
++             * arrays at RSA4096) needs several KiB of stack, not the
++             * ~4 KiB an earlier, stage-1-only version of this size left
++             * available.
++             */
++            if (!memory_region_init_ram(&bmc->soc->vbootrom, OBJECT(bmc->soc),
++                                        "aspeed.vbootrom", 0x4020000,
++                                        &error_abort)) {
++                return;
++            }
++            memory_region_add_subregion_overlap(&bmc->soc->spi_boot_container,
++                                                0, &bmc->soc->vbootrom, 1);
++        }
++
+         bios_name = machine->firmware ?: VBOOTROM_FILE_NAME;
+         aspeed_load_vbootrom(bmc->soc, bios_name, &error_abort);
+     }
+diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
+index c43d268..44f3913 100644
+--- a/hw/arm/aspeed_ast2600_evb.c
++++ b/hw/arm/aspeed_ast2600_evb.c
+@@ -53,12 +53,41 @@ static void aspeed_machine_ast2600_evb_class_init(ObjectClass *oc,
+     aspeed_machine_ast2600_class_emmc_init(oc);
+ };
+ 
++/*
++ * ast2600-lab: ast2600-evb-secureboot -- identical to ast2600-evb, except
++ * amc->vbootrom is set so aspeed_machine_init() (hw/arm/aspeed.c) loads a
++ * -bios image as a virtual boot ROM at address 0x0 instead of aliasing
++ * flash content there unverified. See
++ * layers/meta-ast2600-secureboot/vbootrom-ast2600/ in ast2600-lab and
++ * notes/2026-09-03-02-vbootrom-ast2600-design.md for why this exists.
++ */
++static void aspeed_machine_ast2600_evb_secureboot_class_init(ObjectClass *oc,
++                                                              const void *data)
++{
++    MachineClass *mc;
++    AspeedMachineClass *amc;
++
++    aspeed_machine_ast2600_evb_class_init(oc, data);
++
++    mc = MACHINE_CLASS(oc);
++    amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc = "Aspeed AST2600 EVB (Cortex-A7) with virtual boot ROM";
++    amc->vbootrom = true;
++};
++
+ static const TypeInfo aspeed_ast2600_evb_types[] = {
+     {
+         .name          = MACHINE_TYPE_NAME("ast2600-evb"),
+         .parent        = TYPE_ASPEED_MACHINE,
+         .class_init    = aspeed_machine_ast2600_evb_class_init,
+         .interfaces    = arm_machine_interfaces,
++    },
++    {
++        .name          = MACHINE_TYPE_NAME("ast2600-evb-secureboot"),
++        .parent        = TYPE_ASPEED_MACHINE,
++        .class_init    = aspeed_machine_ast2600_evb_secureboot_class_init,
++        .interfaces    = arm_machine_interfaces,
+     }
+ };
+ 

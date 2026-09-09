@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 19:55:00 -0500
+Subject: [PATCH] hw/arm/aspeed: default secure-boot strap bit, add
+ strapoff test machine
+
+Real AST2600 gates its ROM's own secure-boot decision on TWO bits: the
+OTP config-region "Enable Secure Boot" bit (already read by this lab's
+vboot ROM, layers/meta-ast2600-secureboot/vbootrom-ast2600/otp.c) AND a
+separate hardware-strap bit of the same name, loaded from OTP into the
+SCU's hw-strap1 register at reset -- real silicon ANDs both together
+unless a third bit ("Ignore Secure Boot hardware strap") says not to.
+
+QEMU's own aspeed_otp/aspeed_sbc device models never load OTP strap
+content into hw-strap1 at all (confirmed: no "strap" string appears in
+either file) -- hw-strap1 under QEMU is only ever the machine class's
+own fixed default (AspeedMachineClass::hw_strap1). ast2600-evb-secureboot
+currently just inherits ast2600-evb's own default (0xC0, bits 6/7 --
+unrelated MAC-mode/CPU-frequency straps, bit 0 off), so wiring the vboot
+ROM to actually consult this strap (a stage-3-followup addition to
+otp.c/boot.c, not this patch) would silently disable every existing
+invocation of this machine.
+
+This lab's own real OTP config already declares the strap enabled
+(evb-ast2600-secureboot-otp-on.json's otp_strap section, "Enable secure
+boot": true) -- default this machine's own hw-strap1 to match that
+declared intent (bit 0 set, on top of the inherited 0xC0) instead of
+requiring every caller to pass an override for the common case.
+
+`-global aspeed.scu-ast2600.hw-strap1=` does NOT work as an override
+for this property, confirmed empirically, not just reasoned about:
+hw/arm/aspeed.c's own aspeed_soc_realize() unconditionally re-pushes
+ASPEED_MACHINE(obj)->hw_strap1 (copied from the machine class's own
+default at instance_init, never from a QOM property a -global could
+intercept) into the SCU's "hw-strap1" property during realize, silently
+clobbering any -global default. No other override mechanism reaches
+this property either -- it isn't exposed as a settable machine property
+the way execute-in-place/fmc-model/etc. already are.
+
+So the negative case (strap says disabled, config says enabled ->
+overall disabled) gets its own dedicated machine type instead:
+ast2600-evb-secureboot-strapoff, identical to ast2600-evb-secureboot
+except it doesn't set the strap bit. Both new machine types are
+opt-in and don't touch ast2600-evb (or any other AST2600 machine
+sharing its class chain) at all -- only
+aspeed_machine_ast2600_evb_secureboot_class_init and the new
+_strapoff variant, not the shared aspeed_machine_ast2600_evb_class_init
+they build on.
+
+Signed-off-by: gammaaragon <194803062+gammaaragon@users.noreply.github.com>
+---
+ hw/arm/aspeed_ast2600_evb.c | 53 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
+index 44f3913..b5c1234 100644
+--- a/hw/arm/aspeed_ast2600_evb.c
++++ b/hw/arm/aspeed_ast2600_evb.c
+@@ -74,6 +74,53 @@ static void aspeed_machine_ast2600_evb_secureboot_class_init(ObjectClass *oc,
+
+     mc->desc = "Aspeed AST2600 EVB (Cortex-A7) with virtual boot ROM";
+     amc->vbootrom = true;
++    /*
++     * ast2600-lab: also default the "Enable secure boot" hardware-strap
++     * bit (bit 0 of hw-strap1) on for this machine. Real AST2600 loads
++     * OTP-stored strap bits into this SCU register at reset; QEMU's own
++     * aspeed_otp/aspeed_sbc models don't do that at all (confirmed: no
++     * "strap" string appears in either file) -- hw-strap1 here is only
++     * ever the machine class's own fixed default. This lab's own real
++     * OTP config already declares this strap enabled
++     * (evb-ast2600-secureboot-otp-on.json's otp_strap section), so
++     * defaulting it here keeps every existing invocation of this
++     * machine matching that declared intent. Note `-global
++     * aspeed.scu-ast2600.hw-strap1=` does NOT work as an override for
++     * this specific property -- hw/arm/aspeed.c's own
++     * aspeed_soc_realize() unconditionally re-pushes
++     * ASPEED_MACHINE(obj)->hw_strap1 (itself copied from this class
++     * default at instance_init, never from a QOM property a -global
++     * could intercept) into the SCU's "hw-strap1" property during
++     * realize, silently clobbering any -global default -- confirmed
++     * empirically, not just by reading the ordering. The negative case
++     * (strap says disabled) needs its own dedicated machine type
++     * instead -- see "ast2600-evb-secureboot-strapoff" below.
++     */
++    amc->hw_strap1 |= 0x00000001;
++};
++
++/*
++ * ast2600-lab: ast2600-evb-secureboot-strapoff -- identical to
++ * ast2600-evb-secureboot, except it does NOT set the "Enable secure
++ * boot" hardware-strap bit (stays at the inherited AST2600_EVB_HW_STRAP1,
++ * bit 0 clear). Exists purely to test the vboot ROM's AND-of-both-bits
++ * semantics (OTP config-region bit AND hardware-strap bit) on the
++ * negative side, since no other override mechanism reaches this
++ * specific property under QEMU (see the comment above).
++ */
++static void aspeed_machine_ast2600_evb_secureboot_strapoff_class_init(ObjectClass *oc,
++                                                                       const void *data)
++{
++    MachineClass *mc;
++    AspeedMachineClass *amc;
++
++    aspeed_machine_ast2600_evb_secureboot_class_init(oc, data);
++
++    mc = MACHINE_CLASS(oc);
++    amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc = "Aspeed AST2600 EVB (Cortex-A7) with virtual boot ROM, secure-boot strap off";
++    amc->hw_strap1 &= ~0x00000001u;
+ };
+
+ static const TypeInfo aspeed_ast2600_evb_types[] = {
+@@ -88,6 +135,12 @@ static const TypeInfo aspeed_ast2600_evb_types[] = {
+         .parent        = TYPE_ASPEED_MACHINE,
+         .class_init    = aspeed_machine_ast2600_evb_secureboot_class_init,
+         .interfaces    = arm_machine_interfaces,
++    },
++    {
++        .name          = MACHINE_TYPE_NAME("ast2600-evb-secureboot-strapoff"),
++        .parent        = TYPE_ASPEED_MACHINE,
++        .class_init    = aspeed_machine_ast2600_evb_secureboot_strapoff_class_init,
++        .interfaces    = arm_machine_interfaces,
+     }
+ };
+
+--
+2.43.0

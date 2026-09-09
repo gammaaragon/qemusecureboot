@@ -1,0 +1,44 @@
+This repository is split-licensed, file by file, using SPDX license
+identifiers rather than one blanket license.
+
+Full license texts: LICENSES/MIT.txt, LICENSES/GPL-2.0-or-later.txt
+
+## MIT
+
+All original code, scripts, build/layer metadata, and documentation in
+this repository — independently written, not derived from any GPL
+codebase — is licensed under the MIT License. Copyright (c) 2026
+gammaaragon.
+
+Full text: LICENSES/MIT.txt
+
+## GPL-2.0-or-later
+
+A small number of files under
+`layers/meta-ast2600-secureboot/vbootrom-ast2600/` are ported
+near-verbatim from U-Boot (`sha256.c`/`.h`, `sha512.c`/`.h`, `aes.c`/`.h`,
+`rsa_mod_exp.c`, `rsa.h`, `pkcs15.h`) and remain under U-Boot's own
+GPL-2.0-or-later license, as their own header comments state. The three
+`.patch` files under `qemu-patches/` and
+`recipes-bsp/u-boot/u-boot-aspeed-sdk/` are diffs against QEMU and
+U-Boot (both GPL-2.0-or-later) and are licensed the same way, via a
+`.license` sidecar file next to each patch.
+
+Full text: LICENSES/GPL-2.0-or-later.txt
+
+## How to tell which license applies to a given file
+
+Every source, script, and config file carries its own
+`SPDX-License-Identifier` tag — as its first line where the file format
+allows a comment, or in a `<filename>.license` sidecar file where it
+doesn't (JSON, one .conf file with no comment syntax, and the three
+`.patch` files, left untouched so they still apply cleanly with
+`git am`). This follows the [REUSE](https://reuse.software/) convention:
+license texts live once under `LICENSES/`, and every file states which
+one applies to it, so nothing needs to be inferred from this file alone.
+
+Files with no practical creative content (build-artifact reference
+vectors, checksums, `.gitignore`) are left untagged.
+`layers/meta-ast2600-secureboot/vbootrom-ast2600/test-vectors/` carries
+its own separate `LICENSE-socsec.txt` for the vendored ASPEED `socsec`
+reference material, unrelated to either license above.
