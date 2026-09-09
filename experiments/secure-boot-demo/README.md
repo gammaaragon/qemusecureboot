@@ -79,7 +79,7 @@ doesn't exist yet.
                                   inserts a marker line into init, repacks)
     rebuild-fit.sh                rebuilds a fitImage around a tampered
                                   ramdisk, optionally re-signed (-k keydir)
-    gen-attacker-keys.sh           fresh RSA-4096 keypair for D1/D2, cached
+    gen-attacker-keys.sh          fresh RSA-4096 keypair for D1/D2, cached
                                   under work/attacker-keys/ (must be named
                                   rsa_oem_fitimage_key.key/.crt -- mkimage
                                   resolves signing keys by name hint, not
