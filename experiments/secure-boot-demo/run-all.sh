@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
-# Runs all five secure-boot demonstration experiments (A/B/C/D1/D2) and
+# Runs all six secure-boot demonstration experiments (A/B/C/D1/D2/D3) and
 # reports pass/fail -- same shape as
 # layers/meta-ast2600-secureboot/vbootrom-ast2600/run-tests.sh's own
 # record()/print_summary() pattern.
@@ -51,6 +51,7 @@ run_exp "B: rehashed (unsigned, tamper undetected)"          exp-b-rehash.sh
 run_exp "C: naive resign (signed, no private key -- caught)" exp-c-naive-resign.sh
 run_exp "D1: key swap, stock machine (no anchor -- succeeds)" exp-d1-key-swap-stock-machine.sh
 run_exp "D2: key swap, secureboot machine (anchored -- caught)" exp-d2-key-swap-secureboot-machine.sh
+run_exp "D3: well-formed header, wrong key (BAD_SIGNATURE -- caught)" exp-d3-signed-header-wrong-key.sh
 
 print_summary
 [ "$FAIL" -eq 0 ]

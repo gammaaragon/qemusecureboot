@@ -6,7 +6,7 @@ A reproducible lab for running and instrumenting OpenBMC's dormant AST2600
 secure-boot chain under QEMU, plus a small custom virtual boot ROM
 (`layers/meta-ast2600-secureboot/vbootrom-ast2600/`) that makes the
 otherwise-unexercisable ROM-level trust anchor (layer 1: ROM verifies SPL
-against an OTP-fused key) actually runnable in emulation. Includes five
+against an OTP-fused key) actually runnable in emulation. Includes six
 demonstration experiments proving that a hash check and a real
 cryptographic signature check are not the same guarantee as authenticity
 anchored to hardware.
@@ -19,7 +19,10 @@ identical on both machines above — only layer 1's hardware anchor
 decides whether that check ever gets exercised honestly. That's exactly
 what experiments D1 and D2 demonstrate: the identical attacker-swapped
 artifact boots unchallenged on the left, gets rejected before SPL ever
-runs on the right.
+runs on the right. D3 goes one step further: even a structurally
+perfect, well-formed, correctly-signed header is rejected once it's
+checked against the key the anchor actually has, not the key the
+attacker signed with.
 
 ## Layout
 
@@ -28,7 +31,7 @@ runs on the right.
     layers/meta-ast2600-lab/         hwmon/lm75 layer (adds a sensor over D-Bus)
     layers/meta-ast2600-secureboot/  FIT/OTP secure-boot layer + the vbootrom-ast2600
                                       custom boot ROM and its own test suite
-    experiments/secure-boot-demo/    A/B/C/D1/D2 tamper-demonstration experiments
+    experiments/secure-boot-demo/    A/B/C/D1/D2/D3 tamper-demonstration experiments
 
 Each of `layers/meta-ast2600-lab/`, `layers/meta-ast2600-secureboot/`
 (and `.../vbootrom-ast2600/` within it), and `experiments/secure-boot-demo/`
@@ -156,7 +159,7 @@ failure).
 
 ```
 cd experiments/secure-boot-demo
-./run-all.sh --keep-going    # all five: A, B, C, D1, D2
+./run-all.sh --keep-going    # all six: A, B, C, D1, D2, D3
 ./exp-a-stale-hash.sh        # or any single experiment directly
 ```
 
@@ -166,14 +169,18 @@ cd experiments/secure-boot-demo
 | B | lab | same tamper, hash correctly recomputed | `ast2600-evb` | boots unchallenged — a hash proves nothing about *who* rebuilt it |
 | C | secureboot | same tamper, FIT naively resigned (no private key) | `ast2600-evb` | rejected (real signature check fails) |
 | D1 | secureboot | SPL + U-Boot-proper replaced, signed with a fresh attacker keypair | `ast2600-evb` (no ROM/OTP anchor) | boots unchallenged — nothing verifies SPL itself |
-| D2 | secureboot | identical attacker substitution | `ast2600-evb-secureboot` (real vboot ROM + OTP-fused key) | rejected before SPL ever executes |
+| D2 | secureboot | identical attacker substitution | `ast2600-evb-secureboot` (real vboot ROM + OTP-fused key) | rejected before SPL ever executes (`BAD_CHECKSUM` — no ROT_HEADER at all) |
+| D3 | secureboot | identical substitution, wrapped in a real, well-formed `ROT_HEADER` signed with the attacker's own key | `ast2600-evb-secureboot` (real vboot ROM + OTP-fused key) | rejected before SPL ever executes (`BAD_SIGNATURE` — right format, wrong key) |
 
 Needs both the `lab` and `secureboot` variants already built, the patched
-QEMU for C/D1/D2, and the vboot ROM's own OTP image
+QEMU for C/D1/D2/D3, and the vboot ROM's own OTP image
 (`layers/meta-ast2600-secureboot/vbootrom-ast2600/gen-lab-otp-image.sh`)
-for D2 — see `experiments/secure-boot-demo/README.md` for full detail.
+for D2/D3 — see `experiments/secure-boot-demo/README.md` for full detail.
 D1 vs. D2 is the actual payoff: identical attacker artifact, only the
-anchor differs, only the anchored boot catches it.
+anchor differs, only the anchored boot catches it. D3 shows the anchor
+doesn't care how polished the forgery is either — a crude D2-style
+forgery and a structurally perfect D3-style one are both caught, for two
+different, equally real reasons.
 
 ## Ground rules carried over from this repo's development
 
