@@ -17,7 +17,7 @@ Full text: LICENSES/MIT.txt
 A small number of files under
 `layers/meta-ast2600-secureboot/vbootrom-ast2600/` are ported
 near-verbatim from U-Boot (`sha256.c`/`.h`, `sha512.c`/`.h`, `aes.c`/`.h`,
-`rsa_mod_exp.c`, `rsa.h`, `pkcs15.h`) and remain under U-Boot's own
+`rsa_mod_exp.c`, `rsa.h`, `pkcs15.c`/`.h`) and remain under U-Boot's own
 GPL-2.0-or-later license, as their own header comments state. The three
 `.patch` files under `qemu-patches/` and
 `recipes-bsp/u-boot/u-boot-aspeed-sdk/` are diffs against QEMU and
@@ -25,6 +25,19 @@ U-Boot (both GPL-2.0-or-later) and are licensed the same way, via a
 `.license` sidecar file next to each patch.
 
 Full text: LICENSES/GPL-2.0-or-later.txt
+
+## What this means for the built boot ROM
+
+The two licenses above are compatible, so the mixture is fine to
+distribute -- but the vbootrom binary links the GPL-2.0-or-later files
+listed above together with the MIT ones, so **the built `vbootrom.bin`
+(and the QEMU machine type that embeds it) is a combined work under
+GPL-2.0-or-later as a whole**. Each source file keeps its own license,
+and the MIT files are individually reusable under MIT by anyone who
+takes them on their own; it is only the linked binary that is GPL.
+Anything wanting an MIT-only or Apache-2.0-only boot ROM would have to
+replace `sha256.c`, `sha512.c`, `aes.c`, `rsa_mod_exp.c` and `pkcs15.c`
+with independent implementations first.
 
 ## How to tell which license applies to a given file
 

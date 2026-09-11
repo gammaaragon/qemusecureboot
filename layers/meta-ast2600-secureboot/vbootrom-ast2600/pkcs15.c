@@ -1,8 +1,16 @@
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * PKCS#1 v1.5 signature padding check.
+ * PKCS#1 v1.5 signature padding check, trimmed from U-Boot's
+ * lib/rsa/rsa-verify.c (SPDX-License-Identifier: GPL-2.0+) --
+ * rsa_verify_padding() with the struct checksum_algo/struct
+ * image_sign_info indirection removed and the digest length made a
+ * runtime parameter. The padding-byte walk below (including the
+ * memcmp(p, p + 1, ff_len - 1) trick for checking the 0xFF run) is that
+ * function's own logic, so this file stays under U-Boot's license even
+ * though the *scheme* it checks is the shorter one described next --
+ * see pkcs15.h for the matching note.
  *
- * NOT the same padding U-Boot's own lib/rsa/rsa-verify.c checks (that
+ * What it checks is NOT the padding U-Boot's own rsa-verify.c checks (that
  * version expects a DER-encoded DigestInfo prefix ahead of the digest
  * -- 0x00 0x01 0xFF..0xFF 0x00 <DER prefix> <digest> -- matching how
  * mkimage signs FIT images, which this lab's own layers 2/3 use).
@@ -11,8 +19,8 @@
  * wrapper) produces the simpler classic PKCS#1 v1.5 block instead:
  * 0x00 0x01 0xFF..0xFF 0x00 <digest>, no DER prefix at all.
  *
- * Found the hard way: an earlier version of this file, ported from
- * rsa-verify.c's DER-prefixed logic on the reasonable-looking
+ * Found the hard way: an earlier version of this file kept
+ * rsa-verify.c's DER-prefixed check on the reasonable-looking
  * assumption that "PKCS1.5 SHA-512" meant the same thing in both
  * signing schemes, correctly decrypted the real signature (confirmed
  * via rsa_test.c against an independent Python computation) and still

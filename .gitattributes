@@ -1,0 +1,12 @@
+# Normalise line endings on commit so a Windows checkout (core.autocrlf=true)
+# can never land a CRLF shell script in the repo -- every script here runs on
+# Linux, and CRLF breaks the #! line.
+* text=auto eol=lf
+*.sh text eol=lf
+*.patch text eol=lf
+Makefile text eol=lf
+
+# Binary fixtures: never touch, never diff as text.
+*.bin binary
+*.image binary
+*.svg text eol=lf

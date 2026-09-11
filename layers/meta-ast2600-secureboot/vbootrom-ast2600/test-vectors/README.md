@@ -28,6 +28,13 @@ representations of the same two files, not used here):
   `-blockdev`/`aspeed-otp` expects (see `otp.c`'s own comment for why
   `otptool`'s own `otp-all.image` output isn't that format directly).
 
+  These are ASPEED's own published fixtures, not this lab's keys. The
+  `mode2aes2` variants' `otp-data.bin` contains an RSA *private* exponent
+  by design (that mode unwraps an RSA-wrapped AES key with a key held in
+  OTP), so a secret scanner may flag it — it is socsec 2.0.12's public
+  test key, published upstream under the MIT license above, and protects
+  nothing.
+
 **Naming**: `2600` = AST2600, `a3` = silicon revision A3 (this lab's own
 real OTP key-list encoding — A0's encoding, which most of `socsec`'s own
 test suite defaults to, uses different key-type *values* than A3, see

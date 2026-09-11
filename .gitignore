@@ -1,1 +1,11 @@
 work/
+
+# Never commit key material. Every key this repo uses is either
+# generated at run time into work/ or lives outside the repo entirely
+# (the OpenBMC build tree, socsec's own test keys) -- these patterns are
+# belt and braces so a stray copy outside work/ can't be committed.
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx

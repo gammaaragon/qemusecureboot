@@ -195,8 +195,10 @@ Split-licensed, file by file — see `LICENSE` for the breakdown and
 `LICENSES/` for the full texts. Original work here is MIT; a handful of
 files ported near-verbatim from U-Boot
 (`layers/meta-ast2600-secureboot/vbootrom-ast2600/sha256.*`,
-`sha512.*`, `aes.*`, `rsa_mod_exp.c`, `rsa.h`, `pkcs15.h`) and the QEMU/
+`sha512.*`, `aes.*`, `rsa_mod_exp.c`, `rsa.h`, `pkcs15.*`) and the QEMU/
 U-Boot patch files stay GPL-2.0-or-later, matching their upstream
 license. Every file carries its own `SPDX-License-Identifier` (inline,
 or in a `.license` sidecar file), so no need to infer it from directory
-alone.
+alone. Note that the *built* boot ROM links both sets together, so the
+binary as a whole is GPL-2.0-or-later -- see `LICENSE` for what that
+does and doesn't mean for reusing individual files.
